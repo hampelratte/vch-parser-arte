@@ -25,7 +25,7 @@ public class VideoPageParser {
     }
 
     public void parse(IVideoPage videoPage) throws Exception {
-        logger.log(LogService.LOG_DEBUG, "Getting media link in media page:" + videoPage.getUri());
+        logger.log(LogService.LOG_DEBUG, "Getting media link in media page: " + videoPage.getUri());
 
         String uri = videoPage.getVideoUri().toString();
         if (uri.endsWith(".json")) {

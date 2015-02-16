@@ -235,8 +235,9 @@ public class ArteParser implements IWebParser {
             // parse date (Di, 13. Apr 2010, 00:00)
             try {
                 String format = "EE, dd. MMM yyyy, HH:mm";
+
                 Element ps = (Element) HtmlParserUtils.getTag(nodeContent, "p.views").previousSibling().previousSibling();
-                String dateString = ps.child(0).text();
+                String dateString = ps.text();
                 SimpleDateFormat sdf = new SimpleDateFormat(format);
                 Calendar pubDate = Calendar.getInstance();
                 pubDate.setTime(sdf.parse(dateString));
