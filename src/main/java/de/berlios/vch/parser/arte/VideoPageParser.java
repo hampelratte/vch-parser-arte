@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osgi.framework.BundleContext;
 import org.osgi.service.log.LogService;
 
 import de.berlios.vch.http.client.HttpUtils;
@@ -20,11 +19,14 @@ public class VideoPageParser {
 
     private LogService logger;
 
-    public VideoPageParser(BundleContext ctx, LogService logger) {
+    private ArteParser arteParser;
+
+    public VideoPageParser(LogService logger, ArteParser arteParser) {
         this.logger = logger;
+        this.arteParser = arteParser;
     }
 
-    public void parse(IVideoPage videoPage) throws Exception {
+    public IVideoPage parse(IVideoPage videoPage) throws Exception {
         logger.log(LogService.LOG_DEBUG, "Getting media link in media page: " + videoPage.getUri());
 
         String uri = videoPage.getVideoUri().toString();
@@ -32,8 +34,9 @@ public class VideoPageParser {
             String content = HttpUtils.get(uri, null, ArteParser.CHARSET);
             JSONObject json = new JSONObject(content);
             JSONObject video = json.getJSONObject("videoJsonPlayer");
-            JSONObject formats = video.getJSONObject("VSR");
+            videoPage = arteParser.parseVideo(video);
 
+            JSONObject formats = video.getJSONObject("VSR");
             ArteVideo best = getBestVideo(formats);
             logger.log(LogService.LOG_INFO, "Best video is " + best.uri);
             if ("rtmp".equals(best.format)) {
@@ -47,6 +50,8 @@ public class VideoPageParser {
                 videoPage.setVideoUri(new URI(best.uri));
             }
         }
+
+        return videoPage;
     }
 
     private ArteVideo getBestVideo(JSONObject formats) throws JSONException {

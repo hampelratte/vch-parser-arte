@@ -1,6 +1,7 @@
 package de.berlios.vch.parser.arte;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Collections;
@@ -49,8 +50,6 @@ public class ArteParser implements IWebParser {
     @Requires
     private LogService logger;
 
-    private BundleContext ctx;
-
     private VideoPageParser videoPageParser;
 
     public static Map<String, String> HTTP_HEADERS = new HashMap<String, String>();
@@ -60,7 +59,6 @@ public class ArteParser implements IWebParser {
     }
 
     public ArteParser(BundleContext ctx) {
-        this.ctx = ctx;
     }
 
     @Override
@@ -78,17 +76,7 @@ public class ArteParser implements IWebParser {
         Map<String, IOverviewPage> programs = new HashMap<String, IOverviewPage>();
         for (int i = 0; i < videos.length(); i++) {
             JSONObject video = videos.getJSONObject(i);
-
-            IVideoPage videoPage = new VideoPage();
-            videoPage.setParser(ID);
-            videoPage.setTitle(getTitle(video));
-            videoPage.setVideoUri(new URI(video.getString("videoPlayerUrl")));
-            videoPage.setUri(new URI(video.getString("VUP")));
-            videoPage.setDuration(getDuration(video));
-            videoPage.setThumbnail(getThumbnail(video));
-            videoPage.setDescription(getDescription(video));
-            videoPage.setPublishDate(getPubDate(video));
-
+            IVideoPage videoPage = parseVideo(video);
             if (video.has("clusterTitle")) {
                 String clusterTitle = video.getString("clusterTitle").trim();
                 IOverviewPage opage = programs.get(clusterTitle);
@@ -109,6 +97,19 @@ public class ArteParser implements IWebParser {
 
         Collections.sort(page.getPages(), new WebPageTitleComparator());
         return page;
+    }
+
+    protected IVideoPage parseVideo(JSONObject video) throws JSONException, URISyntaxException {
+        IVideoPage videoPage = new VideoPage();
+        videoPage.setParser(ID);
+        videoPage.setTitle(getTitle(video));
+        videoPage.setVideoUri(new URI(video.getString("videoPlayerUrl")));
+        videoPage.setUri(new URI(video.getString("VUP")));
+        videoPage.setDuration(getDuration(video));
+        videoPage.setThumbnail(getThumbnail(video));
+        videoPage.setDescription(getDescription(video));
+        videoPage.setPublishDate(getPubDate(video));
+        return videoPage;
     }
 
     private Calendar getPubDate(JSONObject video) {
@@ -195,8 +196,7 @@ public class ArteParser implements IWebParser {
     public IWebPage parse(IWebPage page) throws Exception {
         if (page instanceof IVideoPage) {
             IVideoPage video = (IVideoPage) page;
-            videoPageParser.parse(video);
-            return video;
+            return videoPageParser.parse(video);
         } else if (page instanceof IOverviewPage) {
             IOverviewPage opage = (IOverviewPage) page;
             if (!opage.getUri().toString().startsWith("arte://cluster")) {
@@ -252,7 +252,7 @@ public class ArteParser implements IWebParser {
 
     @Validate
     public void start() {
-        videoPageParser = new VideoPageParser(ctx, logger);
+        videoPageParser = new VideoPageParser(logger, this);
     }
 
     @Invalidate
