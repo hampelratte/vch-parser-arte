@@ -68,6 +68,9 @@ public class VideoPageParser {
             }
 
             ArteVideo video = new ArteVideo();
+            if (!vsr.has("width")) {
+                continue;
+            }
             video.width = vsr.getInt("width");
             video.bitrate = vsr.getInt("bitrate");
             video.format = vsr.getString("mediaType");
