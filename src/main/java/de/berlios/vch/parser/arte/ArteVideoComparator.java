@@ -29,10 +29,8 @@ public class ArteVideoComparator implements Comparator<ArteVideo> {
         }
 
         // check the format
-        Integer format1 = formatPriorities.get(a1.format);
-        format1 = format1 != null ? format1 : 0;
-        Integer format2 = formatPriorities.get(a2.format);
-        format2 = format2 != null ? format2 : 0;
+        Integer format1 = getPriority(a1.format);
+        Integer format2 = getPriority(a2.format);
         if (format1 > format2) {
             return 1;
         } else if (format1 < format2) {
@@ -40,6 +38,11 @@ public class ArteVideoComparator implements Comparator<ArteVideo> {
         }
 
         return 0;
+    }
+
+    private int getPriority(String format) {
+        Integer priority = formatPriorities.get(format);
+        return priority != null ? priority : -1;
     }
 
 }

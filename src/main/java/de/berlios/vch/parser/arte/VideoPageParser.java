@@ -2,7 +2,6 @@ package de.berlios.vch.parser.arte;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -12,6 +11,7 @@ import org.osgi.service.log.LogService;
 
 import de.berlios.vch.http.client.HttpUtils;
 import de.berlios.vch.parser.IVideoPage;
+import de.berlios.vch.parser.arte.sorting.VideoSorter;
 
 public class VideoPageParser {
 
@@ -40,7 +40,7 @@ public class VideoPageParser {
             ArteVideo best = getBestVideo(formats);
             logger.log(LogService.LOG_INFO, "Best video is " + best.uri);
             if ("rtmp".equals(best.format)) {
-                videoPage.setVideoUri(new URI(best.streamer + best.uri));
+                videoPage.setVideoUri(new URI(best.uri));
                 videoPage.getUserData().put("streamName", best.uri);
                 videoPage.getUserData().put("swfUri", new URI(SWF_URI));
 
@@ -61,30 +61,23 @@ public class VideoPageParser {
             String key = (String) iterator.next();
             JSONObject vsr = formats.getJSONObject(key);
 
-            // ignore videos with french language
-            String lang = vsr.getString("versionShortLibelle");
-            if ("FR".equalsIgnoreCase(lang)) {
-                continue;
-            }
-
             ArteVideo video = new ArteVideo();
             if (!vsr.has("width")) {
                 continue;
             }
+
+            video.type = vsr.getString("versionShortLibelle");
             video.width = vsr.getInt("width");
             video.bitrate = vsr.getInt("bitrate");
             video.format = vsr.getString("mediaType");
             video.format = "".equals(video.format) ? "http" : video.format;
             video.uri = vsr.getString("url");
-            if ("rtmp".equals(video.format)) {
-                video.streamer = vsr.getString("streamer");
-            }
             videos.add(video);
         }
 
-        Collections.sort(videos, new ArteVideoComparator());
+        new VideoSorter().sort(videos);
         logger.log(LogService.LOG_INFO, "Videos " + videos);
-        ArteVideo best = videos.get(videos.size() - 1);
+        ArteVideo best = videos.get(0);
         return best;
     }
 }

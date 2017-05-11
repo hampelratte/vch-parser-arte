@@ -43,8 +43,6 @@ public class ArteParser implements IWebParser {
 
     public static final String BASE_URI = "http://videos.arte.tv";
 
-    public static final String START_PAGE = BASE_URI + "/de/videos/sendungen";
-
     public static final String ID = ArteParser.class.getName();
 
     @Requires

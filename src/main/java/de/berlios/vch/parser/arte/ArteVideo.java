@@ -1,14 +1,15 @@
 package de.berlios.vch.parser.arte;
 
 public class ArteVideo {
-    int width;
-    int bitrate;
-    String format;
-    String streamer;
-    String uri;
+    public int width;
+    public int bitrate;
+    public String format;
+    public String type;
+    public String uri;
+    public String desc;
 
     @Override
     public String toString() {
-        return width + " " + bitrate + "kbps " + format + " " + streamer + " " + uri;
+        return width + " " + bitrate + "kbps " + format + " " + uri;
     }
 }
