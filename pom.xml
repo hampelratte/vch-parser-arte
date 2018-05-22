@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>parser.arte</artifactId>
     <packaging>bundle</packaging>
-    <version>2.0.0</version>
+    <version>2.0.1-SNAPSHOT</version>
     <name>VCH Arte+7 Parser</name>
     <description>Parse for Arte+7 at http://plus7.arte.tv</description>
 
