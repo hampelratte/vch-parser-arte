@@ -41,7 +41,6 @@ public class VideoSorter {
             }
         });
 
-        // return the best of the bucket with the highest prio
         videos.clear();
         for (Bucket bucket : sortedBuckets) {
             videos.addAll(bucket.videos);
