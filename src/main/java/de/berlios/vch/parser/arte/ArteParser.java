@@ -36,6 +36,7 @@ public class ArteParser implements IWebParser {
     public static final String CHARSET = "UTF-8";
 
     public static final String BASE_URI = "https://www.arte.tv";
+    public static final String API_URI = BASE_URI + "/guide/api/api/zones/de";
 
     public static final String ID = ArteParser.class.getName();
 
@@ -52,8 +53,11 @@ public class ArteParser implements IWebParser {
         page.setTitle(getTitle());
         page.setUri(new URI("vchpage://localhost/" + getId()));
 
-        String pageTmpl = BASE_URI + "/guide/api/api/zones/de/web/listing_MAGAZINES/?page={page}&limit=50";
-        String url = BASE_URI + "/guide/api/api/zones/de/web/listing_MAGAZINES/?page=1&limit=50";
+        parseFilms(page);
+        parseSeries(page);
+
+        String pageTmpl = API_URI + "/listing_MAGAZINES/?page={page}&limit=50";
+        String url = API_URI + "/listing_MAGAZINES/?page=1&limit=50";
         int pageNo = 1;
         while(url != null) {
             String result = HttpUtils.get(url, null, CHARSET);
@@ -75,6 +79,30 @@ public class ArteParser implements IWebParser {
             }
         }
         return page;
+    }
+
+    private void parseSeries(OverviewPage page) throws URISyntaxException, IOException, JSONException {
+        OverviewPage opage = new OverviewPage();
+        opage.setParser(ArteParser.ID);
+        opage.setTitle("Serien");
+        opage.setUri(new URI("arte://series/"));
+        opage.getUserData().put("referer", BASE_URI);
+        page.getPages().add(opage);
+
+        String pageTmpl = API_URI + "/videos_subcategory/?id=SES&page={page}&limit=100";
+        parseProgramPage(opage, pageTmpl);
+    }
+
+    private void parseFilms(OverviewPage page) throws URISyntaxException {
+        OverviewPage opage = new OverviewPage();
+        opage.setParser(ArteParser.ID);
+        opage.setTitle("Filme");
+        opage.setUri(new URI("arte://films/"));
+        opage.getUserData().put("referer", BASE_URI);
+        page.getPages().add(opage);
+
+        String pageTmpl = API_URI + "/videos_subcategory/?id=FIC&page={page}&limit=100";
+        parseProgramPage(opage, pageTmpl);
     }
 
     private Calendar getPubDate(JSONObject video) {
@@ -133,7 +161,6 @@ public class ArteParser implements IWebParser {
             String uri = "https://api.arte.tv/api/player/v1/config/de/" + id;
             Map<String, String> header = HttpUtils.createFirefoxHeader();
             String result = HttpUtils.get(uri, header, CHARSET);
-            logger.log(LogService.LOG_DEBUG, result);
             JSONObject json = new JSONObject(result).getJSONObject("videoJsonPlayer");
             video.setThumbnail(getThumbnail(json));
             video.setPublishDate(getPubDate(json));
@@ -169,30 +196,25 @@ public class ArteParser implements IWebParser {
 
     private void parseProgram(IOverviewPage opage) throws Exception {
         String id = opage.getUri().getPath().substring(1);
+        String pageTemplate = API_URI + "/collection_videos/?id=" + id + "&page={page}";
+        parseProgramPage(opage, pageTemplate);
+    }
+
+    private void parseProgramPage(IOverviewPage opage, String urlTemplate) {
         String referer = (String) opage.getUserData().get("referer");
         Map<String, String> header = HttpUtils.createFirefoxHeader();
         header.put("Referer", referer);
 
         int page = 1;
-        String pageTemplate = BASE_URI + "/guide/api/api/zones/de/web/listing_"+id+"/?page={page}";
-        String nextPage = BASE_URI + "/guide/api/api/zones/de/web/listing_"+id+"/?page="+page;
+        String nextPage = urlTemplate.replaceAll("\\{page\\}", Integer.toString(page));
         while(nextPage != null) {
             try {
                 String result = HttpUtils.get(nextPage, header, CHARSET);
                 JSONObject json = new JSONObject(result);
                 JSONArray data = json.getJSONArray("data");
-                for (int i = 0; i < data.length(); i++) {
-                    JSONObject program = data.getJSONObject(i);
-                    VideoPage video = new VideoPage();
-                    video.setParser(ArteParser.ID);
-                    video.setTitle(getTitle(opage.getTitle(), program));
-                    video.setDescription(program.getString("description"));
-                    video.setUri(new URI("arte://video/" + program.getString("programId")));
-                    video.setDuration(program.getInt("duration"));
-                    opage.getPages().add(video);
-                }
+                parseDataArray(opage, data);
                 if(json.has("nextPage") && !json.isNull("nextPage")) {
-                    nextPage = pageTemplate.replaceAll("\\{page\\}", Integer.toString(++page));
+                    nextPage = urlTemplate.replaceAll("\\{page\\}", Integer.toString(++page));
                 } else {
                     nextPage = null;
                 }
@@ -200,6 +222,19 @@ public class ArteParser implements IWebParser {
                 logger.log(LogService.LOG_ERROR, "Couldn't load page", e);
                 break;
             }
+        }
+    }
+
+    private void parseDataArray(IOverviewPage opage, JSONArray data) throws Exception {
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject program = data.getJSONObject(i);
+            VideoPage video = new VideoPage();
+            video.setParser(ArteParser.ID);
+            video.setTitle(getTitle(opage.getTitle(), program));
+            video.setDescription(program.getString("description"));
+            video.setUri(new URI("arte://video/" + program.getString("programId")));
+            video.setDuration(program.getInt("duration"));
+            opage.getPages().add(video);
         }
     }
 
